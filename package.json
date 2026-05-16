@@ -1,0 +1,52 @@
+{
+  "name": "notizy",
+  "version": "0.0.1",
+  "description": "Official Notizy SDK for Node.js",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "files": [
+    "dist/**/*"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "version": ">=22.0.0"
+    }
+  },
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsdown src/index.ts --format esm,cjs --dts",
+    "test": "vitest run --exclude e2e"
+  },
+  "author": "support@notizy.id",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/notizy/nodejs.git"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.15",
+    "@types/node": "^25.8.0",
+    "typescript": "^6"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "tsdown": "^0.22.0",
+    "vitest": "^4.1.6"
+  }
+}
