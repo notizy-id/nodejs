@@ -1,0 +1,423 @@
+import createFetchMock from 'vitest-fetch-mock';
+import { Notizy } from '../core/notizy';
+import type { ErrorResponse } from '../types/http';
+import { mockSuccessResponse } from '../utils/test-utils';
+import type {
+  CreateApiKeyOptions,
+  CreateApiKeyResponseSuccess,
+} from './types/create-api-keys';
+import type { ListApiKeysResponseSuccess } from './types/list-api-keys';
+import type { RemoveApiKeyResponseSuccess } from './types/remove-api-keys';
+
+const fetchMocker = createFetchMock(vi);
+fetchMocker.enableMocks();
+
+describe('API Keys', () => {
+  afterEach(() => fetchMock.resetMocks());
+  afterAll(() => fetchMocker.disableMocks());
+
+  describe('create', () => {
+    it('creates an api key', async () => {
+      const payload: CreateApiKeyOptions = {
+        name: 'Test',
+      };
+      const response: CreateApiKeyResponseSuccess = {
+        token: 'n_PKr4RCko_Lhm9ost2YjNCctnPjbLw8Nqk',
+        id: '430eed87-632a-4ea6-90db-0aace67ec228',
+      };
+
+      fetchMock.mockOnce(JSON.stringify(response), {
+        status: 201,
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+
+      const notizy = new Notizy('n_zKa4RCko_Lhm9ost2YjNCctnPjbLw8Nop');
+
+      await expect(
+        notizy.apiKeys.create(payload),
+      ).resolves.toMatchInlineSnapshot(`
+        {
+          "data": {
+            "id": "430eed87-632a-4ea6-90db-0aace67ec228",
+            "token": "n_PKr4RCko_Lhm9ost2YjNCctnPjbLw8Nqk",
+          },
+          "error": null,
+          "headers": {
+            "content-type": "application/json",
+          },
+        }
+      `);
+    });
+
+    it('throws error when missing name', async () => {
+      const payload: CreateApiKeyOptions = {
+        name: '',
+      };
+      const response: ErrorResponse = {
+        message: 'String must contain at least 1 character(s)',
+        name: 'validation_error',
+        statusCode: 422,
+      };
+
+      fetchMock.mockOnce(JSON.stringify(response), {
+        status: 422,
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+
+      const notizy = new Notizy('n_zKa4RCko_Lhm9ost2YjNCctnPjbLw8Nop');
+
+      const result = notizy.apiKeys.create(payload);
+
+      await expect(result).resolves.toMatchInlineSnapshot(`
+        {
+          "data": null,
+          "error": {
+            "message": "String must contain at least 1 character(s)",
+            "name": "validation_error",
+            "statusCode": 422,
+          },
+          "headers": {
+            "content-type": "application/json",
+          },
+        }
+      `);
+    });
+
+    describe('with access', () => {
+      it('creates api key with access `full_access`', async () => {
+        const payload: CreateApiKeyOptions = {
+          name: 'Test',
+          permission: 'full_access',
+        };
+
+        const response: CreateApiKeyResponseSuccess = {
+          token: 'n_PKr4RCko_Lhm9ost2YjNCctnPjbLw8Nqk',
+          id: '430eed87-632a-4ea6-90db-0aace67ec228',
+        };
+
+        fetchMock.mockOnce(JSON.stringify(response), {
+          status: 201,
+          headers: {
+            'content-type': 'application/json',
+          },
+        });
+
+        const notizy = new Notizy('n_zKa4RCko_Lhm9ost2YjNCctnPjbLw8Nop');
+
+        await expect(
+          notizy.apiKeys.create(payload),
+        ).resolves.toMatchInlineSnapshot(`
+          {
+            "data": {
+              "id": "430eed87-632a-4ea6-90db-0aace67ec228",
+              "token": "n_PKr4RCko_Lhm9ost2YjNCctnPjbLw8Nqk",
+            },
+            "error": null,
+            "headers": {
+              "content-type": "application/json",
+            },
+          }
+        `);
+      });
+
+      it('creates api key with access `sending_access`', async () => {
+        const payload: CreateApiKeyOptions = {
+          name: 'Test',
+          permission: 'sending_access',
+        };
+        const response: CreateApiKeyResponseSuccess = {
+          token: 'n_PKr4RCko_Lhm9ost2YjNCctnPjbLw8Nqk',
+          id: '430eed87-632a-4ea6-90db-0aace67ec228',
+        };
+
+        fetchMock.mockOnce(JSON.stringify(response), {
+          status: 201,
+          headers: {
+            'content-type': 'application/json',
+          },
+        });
+
+        const notizy = new Notizy('n_zKa4RCko_Lhm9ost2YjNCctnPjbLw8Nop');
+
+        await expect(
+          notizy.apiKeys.create(payload),
+        ).resolves.toMatchInlineSnapshot(`
+          {
+            "data": {
+              "id": "430eed87-632a-4ea6-90db-0aace67ec228",
+              "token": "n_PKr4RCko_Lhm9ost2YjNCctnPjbLw8Nqk",
+            },
+            "error": null,
+            "headers": {
+              "content-type": "application/json",
+            },
+          }
+        `);
+      });
+
+      it('throws error with wrong access', async () => {
+        const response: ErrorResponse = {
+          name: 'invalid_access',
+          message: 'Access must be "full_access" | "sending_access"',
+          statusCode: 422,
+        };
+
+        fetchMock.mockOnce(JSON.stringify(response), {
+          status: 422,
+          headers: {
+            'content-type': 'application/json',
+          },
+        });
+
+        const notizy = new Notizy('n_zKa4RCko_Lhm9ost2YjNCctnPjbLw8Nop');
+
+        const payload: CreateApiKeyOptions = {
+          name: 'Test',
+          permission: 'wrong_access' as 'sending_access' | 'full_access',
+        };
+
+        await expect(
+          notizy.apiKeys.create(payload),
+        ).resolves.toMatchInlineSnapshot(`
+          {
+            "data": null,
+            "error": {
+              "message": "Access must be "full_access" | "sending_access"",
+              "name": "invalid_access",
+              "statusCode": 422,
+            },
+            "headers": {
+              "content-type": "application/json",
+            },
+          }
+        `);
+      });
+    });
+  });
+
+  describe('list', () => {
+    const response: ListApiKeysResponseSuccess = {
+      object: 'list',
+      has_more: false,
+      data: [
+        {
+          id: '5262504e-8ed7-4fac-bd16-0d4be94bc9f2',
+          name: 'My API Key 1',
+          created_at: '2023-04-07T20:29:10.666968+00:00',
+          last_used_at: '2023-04-08T12:00:00.000000+00:00',
+        },
+        {
+          id: '98c37b35-1473-4afe-a627-78e975a36fab',
+          name: 'My API Key 2',
+          created_at: '2023-04-06T23:09:49.093947+00:00',
+          last_used_at: null,
+        },
+      ],
+    };
+
+    describe('when no pagination options are provided', () => {
+      it('lists api keys', async () => {
+        mockSuccessResponse(response, {
+          headers: {},
+        });
+
+        const notizy = new Notizy('n_zKa4RCko_Lhm9ost2YjNCctnPjbLw8Nop');
+
+        const result = await notizy.apiKeys.list();
+        expect(result).toEqual({
+          data: response,
+          error: null,
+          headers: {
+            'content-type': 'application/json',
+          },
+        });
+
+        expect(fetchMock).toHaveBeenCalledWith(
+          'https://api.notizy.id/api-keys',
+          expect.objectContaining({
+            method: 'GET',
+            headers: expect.any(Headers),
+          }),
+        );
+      });
+    });
+
+    describe('when pagination options are provided', () => {
+      it('passes limit param and returns a response', async () => {
+        mockSuccessResponse(response, {
+          headers: {},
+        });
+
+        const notizy = new Notizy('n_zKa4RCko_Lhm9ost2YjNCctnPjbLw8Nop');
+        const result = await notizy.apiKeys.list({ limit: 1 });
+        expect(result).toEqual({
+          data: response,
+          error: null,
+          headers: {
+            'content-type': 'application/json',
+          },
+        });
+
+        expect(fetchMock).toHaveBeenCalledWith(
+          'https://api.notizy.id/api-keys?limit=1',
+          expect.objectContaining({
+            method: 'GET',
+            headers: expect.any(Headers),
+          }),
+        );
+      });
+
+      it('passes after param and returns a response', async () => {
+        mockSuccessResponse(response, {
+          headers: {},
+        });
+
+        const notizy = new Notizy('n_zKa4RCko_Lhm9ost2YjNCctnPjbLw8Nop');
+        const result = await notizy.apiKeys.list({
+          limit: 1,
+          after: 'cursor-value',
+        });
+        expect(result).toEqual({
+          data: response,
+          error: null,
+          headers: {
+            'content-type': 'application/json',
+          },
+        });
+
+        expect(fetchMock).toHaveBeenCalledWith(
+          'https://api.notizy.id/api-keys?limit=1&after=cursor-value',
+          expect.objectContaining({
+            method: 'GET',
+            headers: expect.any(Headers),
+          }),
+        );
+      });
+
+      it('passes before param and returns a response', async () => {
+        mockSuccessResponse(response, {
+          headers: {},
+        });
+
+        const notizy = new Notizy('n_zKa4RCko_Lhm9ost2YjNCctnPjbLw8Nop');
+        const result = await notizy.apiKeys.list({
+          limit: 1,
+          before: 'cursor-value',
+        });
+        expect(result).toEqual({
+          data: response,
+          error: null,
+          headers: {
+            'content-type': 'application/json',
+          },
+        });
+
+        expect(fetchMock).toHaveBeenCalledWith(
+          'https://api.notizy.id/api-keys?limit=1&before=cursor-value',
+          expect.objectContaining({
+            method: 'GET',
+            headers: expect.any(Headers),
+          }),
+        );
+      });
+    });
+  });
+
+  describe('remove', () => {
+    const id = '5262504e-8ed7-4fac-bd16-0d4be94bc9f2';
+    const response: RemoveApiKeyResponseSuccess = {};
+
+    it('removes an api key', async () => {
+      fetchMock.mockOnce(JSON.stringify(response), {
+        status: 200,
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+
+      const notizy = new Notizy('n_zKa4RCko_Lhm9ost2YjNCctnPjbLw8Nop');
+
+      await expect(notizy.apiKeys.remove(id)).resolves.toMatchInlineSnapshot(`
+        {
+          "data": {},
+          "error": null,
+          "headers": {
+            "content-type": "application/json",
+          },
+        }
+      `);
+    });
+
+    it('throws error when missing id', async () => {
+      const response: ErrorResponse = {
+        name: 'application_error',
+        message: 'Something went wrong',
+        statusCode: 500,
+      };
+
+      fetchMock.mockOnce(JSON.stringify(response), {
+        status: 500,
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+
+      const notizy = new Notizy('n_zKa4RCko_Lhm9ost2YjNCctnPjbLw8Nop');
+
+      const result = notizy.apiKeys.remove('');
+
+      await expect(result).resolves.toMatchInlineSnapshot(`
+        {
+          "data": null,
+          "error": {
+            "message": "Something went wrong",
+            "name": "application_error",
+            "statusCode": 500,
+          },
+          "headers": {
+            "content-type": "application/json",
+          },
+        }
+      `);
+    });
+
+    it('throws error when wrong id', async () => {
+      const response: ErrorResponse = {
+        name: 'not_found',
+        message: 'API key not found',
+        statusCode: 404,
+      };
+
+      fetchMock.mockOnce(JSON.stringify(response), {
+        status: 404,
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+
+      const notizy = new Notizy('n_zKa4RCko_Lhm9ost2YjNCctnPjbLw8Nop');
+
+      const result = notizy.apiKeys.remove(
+        '34bd250e-615a-400c-be11-5912572ee15b',
+      );
+
+      await expect(result).resolves.toMatchInlineSnapshot(`
+        {
+          "data": null,
+          "error": {
+            "message": "API key not found",
+            "name": "not_found",
+            "statusCode": 404,
+          },
+          "headers": {
+            "content-type": "application/json",
+          },
+        }
+      `);
+    });
+  });
+});

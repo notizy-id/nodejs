@@ -1,1 +1,1 @@
-export * from "./core/notizy";
+export { Notizy } from './core/notizy';
