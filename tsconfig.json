@@ -18,5 +18,5 @@
     "target": "es2017",
     "types": ["vitest/globals", "@types/node"]
   },
-  "include": ["src"]
+  "include": ["src", "e2e"]
 }

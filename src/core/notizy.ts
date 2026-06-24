@@ -6,6 +6,8 @@ import type { IdempotentRequest } from '../types/idempotent-request';
 import type { PatchOptions } from '../types/patch-options';
 import type { PostOptions } from '../types/post-options';
 import type { PutOptions } from '../types/put-options';
+import { Whatsapp } from '../whatsapp/whatsapp';
+import type { NotizyOptions } from './types';
 
 const defaultBaseUrl = 'https://api.notizy.id';
 const defaultUserAgent = `notizy-sdk-nodejs/${version}`;
@@ -23,11 +25,16 @@ const userAgent =
 export class Notizy {
   readonly key: string;
   private readonly headers: Headers;
+  private baseUrl: string = baseUrl;
 
   readonly apiKeys = new ApiKeys(this);
+  readonly whatsapp = new Whatsapp(this);
 
-  constructor(key: string) {
+  constructor(key: string, options?: NotizyOptions) {
     this.key = key;
+    if (options?.baseUrl) {
+      this.baseUrl = options.baseUrl;
+    }
 
     if (!this.key) {
       throw new Error(
@@ -36,14 +43,15 @@ export class Notizy {
     }
 
     this.headers = new Headers({
-      Authorization: `Bearer ${this.key}`,
+      'X-Api-Key': `${this.key}`,
       'User-Agent': userAgent,
+      'Content-Type': 'application/json',
     });
   }
 
   async fetchRequest<T>(path: string, options = {}): Promise<Response<T>> {
     try {
-      const response = await fetch(`${baseUrl}${path}`, options);
+      const response = await fetch(`${this.baseUrl}${path}`, options);
 
       if (!response.ok) {
         try {
