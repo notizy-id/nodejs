@@ -8,6 +8,16 @@ export type MessageStatus =
   | 'READ'
   | 'FAILED';
 
+/** Who sent an outbound message. */
+export type SentBy =
+  | { type: 'api_key'; id: string }
+  /** `id` is null for messages sent before it was recorded. */
+  | { type: 'user'; id: string | null; name: string | null }
+  | { type: 'broadcast'; id: string }
+  | { type: 'ai' }
+  /** Sent from the WhatsApp Business app. */
+  | { type: 'business_app' };
+
 export interface Message {
   id: string;
   channel: 'whatsapp';
@@ -17,8 +27,14 @@ export interface Message {
   type: string;
   text?: string;
   media_url?: string;
+  /** The WhatsApp account (business number). */
+  account_id: string;
+  /** Phone number, digits only: the business number for outbound, the contact for inbound. */
   from: string;
+  /** Phone number, digits only. */
   to: string;
+  /** Outbound only. */
+  sent_by?: SentBy;
   conversation_id: string;
   created_at: string;
   sent_at?: string;

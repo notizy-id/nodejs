@@ -42,6 +42,9 @@ export interface SendWhatsAppMessageRequestOptions
 export interface QueuedMessage {
   id: string;
   status: 'PENDING';
+  account_id: string;
+  /** The business number, digits only. */
+  from: string;
   to: string;
   created_at: string;
   conversation_id: string;

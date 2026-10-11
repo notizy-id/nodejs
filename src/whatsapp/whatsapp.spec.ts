@@ -8,6 +8,8 @@ const notizy = new Notizy('nzy_test', { baseUrl: 'https://api.test' });
 const queued = {
   id: 'm1',
   status: 'PENDING',
+  account_id: 'acc',
+  from: '6281100000000',
   to: '6281234567890',
   created_at: '2026-10-11T00:00:00.000Z',
   conversation_id: 'c1',
