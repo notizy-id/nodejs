@@ -1,4 +1,4 @@
 export interface GetOptions {
-  query?: Record<string, unknown>;
+  query?: Record<string, string | number | boolean | undefined>;
   headers?: HeadersInit;
 }

@@ -1,11 +1,18 @@
 import { version } from '../../package.json';
 import { ApiKeys } from '../api-keys/api-keys';
+import { Broadcasts } from '../broadcasts/broadcasts';
+import { Contacts } from '../contacts/contacts';
+import { Media } from '../media/media';
+import { Messages } from '../messages/messages';
+import { errorNameFromStatus } from '../types/error';
 import type { GetOptions } from '../types/get-options';
 import type { ErrorResponse, Response } from '../types/http';
 import type { IdempotentRequest } from '../types/idempotent-request';
 import type { PatchOptions } from '../types/patch-options';
 import type { PostOptions } from '../types/post-options';
 import type { PutOptions } from '../types/put-options';
+import { withQuery } from '../utils/build-query';
+import { Webhooks } from '../webhooks/webhooks';
 import { Whatsapp } from '../whatsapp/whatsapp';
 import type { NotizyOptions } from './types';
 
@@ -29,6 +36,11 @@ export class Notizy {
 
   readonly apiKeys = new ApiKeys(this);
   readonly whatsapp = new Whatsapp(this);
+  readonly messages = new Messages(this);
+  readonly media = new Media(this);
+  readonly contacts = new Contacts(this);
+  readonly broadcasts = new Broadcasts(this);
+  readonly webhooks = new Webhooks();
 
   constructor(key: string, options?: NotizyOptions) {
     this.key = key;
@@ -54,47 +66,35 @@ export class Notizy {
       const response = await fetch(`${this.baseUrl}${path}`, options);
 
       if (!response.ok) {
+        const headers = Object.fromEntries(response.headers.entries());
+        const raw = await response.text().catch(() => '');
+        let body: Record<string, unknown> | null = null;
         try {
-          const rawError = await response.text();
-          return {
-            data: null,
-            error: JSON.parse(rawError),
-            headers: Object.fromEntries(response.headers.entries()),
-          };
-        } catch (err) {
-          if (err instanceof SyntaxError) {
-            return {
-              data: null,
-              error: {
-                name: 'application_error',
-                statusCode: response.status,
-                message:
-                  'Internal server error. We are unable to process your request right now, please try again later.',
-              },
-              headers: Object.fromEntries(response.headers.entries()),
-            };
-          }
-
-          const error: ErrorResponse = {
-            message: response.statusText,
-            statusCode: response.status,
-            name: 'application_error',
-          };
-
-          if (err instanceof Error) {
-            return {
-              data: null,
-              error: { ...error, message: err.message },
-              headers: Object.fromEntries(response.headers.entries()),
-            };
-          }
-
-          return {
-            data: null,
-            error,
-            headers: Object.fromEntries(response.headers.entries()),
-          };
+          const parsed = raw ? JSON.parse(raw) : null;
+          if (parsed && typeof parsed === 'object') body = parsed;
+        } catch {
+          // not JSON (proxy error page, plain-text error)
         }
+        const message =
+          typeof body?.message === 'string'
+            ? body.message
+            : response.status >= 500 || !raw
+              ? 'Internal server error. We are unable to process your request right now, please try again later.'
+              : raw;
+        return {
+          data: null,
+          // the API sends { message, errors?, request_id? }: add the status
+          // and a stable name so callers can branch on them
+          error: {
+            ...body,
+            name:
+              (body?.name as ErrorResponse['name'] | undefined) ??
+              errorNameFromStatus(response.status),
+            statusCode: response.status,
+            message,
+          },
+          headers,
+        };
       }
 
       const data = await response.json();
@@ -141,19 +141,27 @@ export class Notizy {
   }
 
   async get<T>(path: string, options: GetOptions = {}) {
+    const { query, ...rest } = options;
     const headers = new Headers(this.headers);
-    if (options.headers) {
-      for (const [key, value] of new Headers(options.headers).entries()) {
+    if (rest.headers) {
+      for (const [key, value] of new Headers(rest.headers).entries()) {
         headers.set(key, value);
       }
     }
     const requestOptions = {
       method: 'GET',
-      ...options,
+      ...rest,
       headers,
     };
 
-    return this.fetchRequest<T>(path, requestOptions);
+    return this.fetchRequest<T>(withQuery(path, query), requestOptions);
+  }
+
+  /** multipart/form-data POST; fetch sets the Content-Type boundary. */
+  async postForm<T>(path: string, form: FormData) {
+    const headers = new Headers(this.headers);
+    headers.delete('Content-Type');
+    return this.fetchRequest<T>(path, { method: 'POST', body: form, headers });
   }
 
   async put<T>(path: string, entity: unknown, options: PutOptions = {}) {
